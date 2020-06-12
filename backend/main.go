@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/loxt/go-fintech-banking/migrations"
+	"github.com/loxt/go-fintech-banking/api"
 )
 
 func main() {
-	migrations.Migrate()
+	//migrations.Migrate()
+	api.StartApi()
 }
