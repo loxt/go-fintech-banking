@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/loxt/go-fintech-banking/helpers"
+	"github.com/loxt/go-fintech-banking/interfaces"
 	"github.com/loxt/go-fintech-banking/users"
 	"io/ioutil"
 	"log"
@@ -22,52 +23,62 @@ type Register struct {
 	Password string
 }
 
-type ErrResponse struct {
-	Message string
+func readBody(r *http.Request) []byte {
+	body, err := ioutil.ReadAll(r.Body)
+	helpers.HandleErr(err)
+
+	return body
+}
+
+func apiResponse(call map[string]interface{}, w http.ResponseWriter) {
+	if call["message"] == "All is fine" {
+		res := call
+		json.NewEncoder(w).Encode(res)
+	} else {
+		res := interfaces.ErrResponse{Message: "Wrong username or password"}
+		json.NewEncoder(w).Encode(res)
+	}
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	body := readBody(r)
+
+	var formattedBody Login
+	err := json.Unmarshal(body, &formattedBody)
+	helpers.HandleErr(err)
+	login := users.Login(formattedBody.Username, formattedBody.Password)
+
+	apiResponse(login, w)
+}
+
+func register(w http.ResponseWriter, r *http.Request) {
+	body := readBody(r)
+
+	var formattedBody Register
+	err := json.Unmarshal(body, &formattedBody)
+	helpers.HandleErr(err)
+	register := users.Register(formattedBody.Username, formattedBody.Email, formattedBody.Password)
+
+	apiResponse(register, w)
+}
+
+func getUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userID := vars["id"]
+	auth := r.Header.Get("Authorization")
+
+	user := users.GetUser(userID, auth)
+	apiResponse(user, w)
 }
 
 func StartApi() {
 	router := mux.NewRouter()
+	router.Use(helpers.PanicHandler)
 
 	router.HandleFunc("/login", login).Methods("POST")
 	router.HandleFunc("/register", register).Methods("POST")
+	router.HandleFunc("/user/{id}", getUser).Methods("GET")
 
 	fmt.Println("App is working on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
-}
-
-func login(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	helpers.HandleErr(err)
-
-	var formattedBody Login
-	err = json.Unmarshal(body, &formattedBody)
-	helpers.HandleErr(err)
-	login := users.Login(formattedBody.Username, formattedBody.Password)
-
-	if login["message"] == "All is fine" {
-		res := login
-		json.NewEncoder(w).Encode(res)
-	} else {
-		res := ErrResponse{Message: "Wrong username or password"}
-		json.NewEncoder(w).Encode(res)
-	}
-}
-
-func register(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	helpers.HandleErr(err)
-
-	var formattedBody Register
-	err = json.Unmarshal(body, &formattedBody)
-	helpers.HandleErr(err)
-	register := users.Register(formattedBody.Username, formattedBody.Email, formattedBody.Password)
-
-	if register["message"] == "All is fine" {
-		res := register
-		json.NewEncoder(w).Encode(res)
-	} else {
-		res := ErrResponse{Message: "Wrong username or password"}
-		json.NewEncoder(w).Encode(res)
-	}
 }
