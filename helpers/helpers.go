@@ -3,7 +3,6 @@ package helpers
 import (
 	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/loxt/go-fintech-banking/interfaces"
 	"golang.org/x/crypto/bcrypt"
@@ -25,15 +24,6 @@ func HashAndSalt(pass []byte) string {
 	HandleErr(err)
 
 	return string(hashed)
-}
-
-func ConnectDB() *gorm.DB {
-	db, err := gorm.Open(
-		"postgres",
-		"host=127.0.0.1 port=5432 user=postgres dbname=bankapp password=postgres sslmode=disable")
-
-	HandleErr(err)
-	return db
 }
 
 func Validation(values []interfaces.Validation) bool {
@@ -66,7 +56,7 @@ func PanicHandler(next http.Handler) http.Handler {
 			if err != nil {
 				log.Println(err)
 				res := interfaces.ErrResponse{Message: "Internal server error"}
-				json.NewEncoder(w).Encode(res)
+				_ = json.NewEncoder(w).Encode(res)
 			}
 		}()
 		next.ServeHTTP(w, r)

@@ -2,11 +2,10 @@ package main
 
 import (
 	"github.com/loxt/go-fintech-banking/api"
-	"github.com/loxt/go-fintech-banking/migrations"
+	"github.com/loxt/go-fintech-banking/database"
 )
 
 func main() {
-	migrations.MigrateTransactions()
-	//migrations.Migrate()
+	database.InitDatabase()
 	api.StartApi()
 }

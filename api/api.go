@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/loxt/go-fintech-banking/helpers"
+	"github.com/loxt/go-fintech-banking/transactions"
 	"github.com/loxt/go-fintech-banking/useraccounts"
 	"github.com/loxt/go-fintech-banking/users"
 	"io/ioutil"
@@ -40,10 +41,10 @@ func readBody(r *http.Request) []byte {
 func apiResponse(call map[string]interface{}, w http.ResponseWriter) {
 	if call["message"] == "All is fine" {
 		res := call
-		json.NewEncoder(w).Encode(res)
+		_ = json.NewEncoder(w).Encode(res)
 	} else {
 		res := call
-		json.NewEncoder(w).Encode(res)
+		_ = json.NewEncoder(w).Encode(res)
 	}
 }
 
@@ -78,6 +79,15 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	apiResponse(user, w)
 }
 
+func getMyTransactions(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userId := vars["userID"]
+	auth := r.Header.Get("Authorization")
+
+	t := transactions.GetMyTransactions(userId, auth)
+	apiResponse(t, w)
+}
+
 func transaction(w http.ResponseWriter, r *http.Request) {
 	body := readBody(r)
 	auth := r.Header.Get("Authorization")
@@ -104,6 +114,7 @@ func StartApi() {
 	router.HandleFunc("/register", register).Methods("POST")
 	router.HandleFunc("/transaction", transaction).Methods("POST")
 	router.HandleFunc("/user/{id}", getUser).Methods("GET")
+	router.HandleFunc("/transactions/{userID}", getMyTransactions).Methods("GET")
 
 	fmt.Println("App is working on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

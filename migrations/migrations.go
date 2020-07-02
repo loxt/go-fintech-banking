@@ -1,13 +1,12 @@
 package migrations
 
 import (
+	"github.com/loxt/go-fintech-banking/database"
 	"github.com/loxt/go-fintech-banking/helpers"
 	"github.com/loxt/go-fintech-banking/interfaces"
 )
 
 func createAccounts() {
-	db := helpers.ConnectDB()
-
 	users := &[2]interfaces.User{
 		{
 			Username: "Loxt",
@@ -26,34 +25,24 @@ func createAccounts() {
 			Email:    users[i].Email,
 			Password: generatePassword,
 		}
-		db.Create(&user)
+		database.DB.Create(&user)
 
 		account := &interfaces.Account{
 			Type:    "Daily Account",
-			Name:    string(users[i].Username + "'s account"),
-			Balance: uint(10000 * int(i+1)),
+			Name:    users[i].Username + "'s account",
+			Balance: uint(10000*i + 1),
 			UserID:  user.ID,
 		}
-
-		db.Create(&account)
+		database.DB.Create(&account)
 	}
-	defer db.Close()
+	defer database.DB.Close()
 }
 
 func Migrate() {
 	User := &interfaces.User{}
 	Account := &interfaces.Account{}
-	db := helpers.ConnectDB()
-	db.AutoMigrate(&User, &Account)
-	defer db.Close()
+	Transactions := &interfaces.Transaction{}
+	database.DB.AutoMigrate(&User, &Account, &Transactions)
 
 	createAccounts()
-}
-
-func MigrateTransactions() {
-	Transactions := &interfaces.Transaction{}
-
-	db := helpers.ConnectDB()
-	db.AutoMigrate(&Transactions)
-	defer db.Close()
 }
